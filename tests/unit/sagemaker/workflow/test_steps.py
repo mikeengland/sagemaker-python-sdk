@@ -809,6 +809,42 @@ def test_create_model_step(sagemaker_session):
     assert step.properties.ModelName.expr == {"Get": "Steps.MyCreateModelStep.ModelName"}
 
 
+def test_create_model_step_wth_tags(sagemaker_session):
+    model = Model(
+        image_uri=IMAGE_URI,
+        role=ROLE,
+        sagemaker_session=sagemaker_session,
+    )
+    inputs = CreateModelInput(
+        instance_type="c4.4xlarge",
+        accelerator_type="ml.eia1.medium",
+    )
+    step = CreateModelStep(
+        name="MyCreateModelStep",
+        depends_on=["TestStep"],
+        display_name="MyCreateModelStep",
+        description="TestDescription",
+        model=model,
+        inputs=inputs,
+        tags=[{"Key": "tag1", "Value": "value1"}, {"Key": "tag2", "Value": "value2"}],
+    )
+    step.add_depends_on(["SecondTestStep"])
+
+    assert step.to_request() == {
+        "Name": "MyCreateModelStep",
+        "Type": "Model",
+        "Description": "TestDescription",
+        "DisplayName": "MyCreateModelStep",
+        "DependsOn": ["TestStep", "SecondTestStep"],
+        "Arguments": {
+            "ExecutionRoleArn": "DummyRole",
+            "PrimaryContainer": {"Environment": {}, "Image": "fakeimage"},
+            "Tags": [{"Key": "tag1", "Value": "value1"}, {"Key": "tag2", "Value": "value2"}],
+        },
+    }
+    assert step.properties.ModelName.expr == {"Get": "Steps.MyCreateModelStep.ModelName"}
+
+
 def test_create_model_step_with_invalid_input(sagemaker_session):
     # without both step_args and any of the old required arguments
     with pytest.raises(ValueError) as error:

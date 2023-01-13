@@ -545,6 +545,7 @@ class CreateModelStep(ConfigurableRetryStep):
         retry_policies: Optional[List[RetryPolicy]] = None,
         display_name: Optional[str] = None,
         description: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
     ):
         """Construct a `CreateModelStep`, given an `sagemaker.model.Model` instance.
 
@@ -564,6 +565,7 @@ class CreateModelStep(ConfigurableRetryStep):
             retry_policies (List[RetryPolicy]):  A list of retry policies (default: None).
             display_name (str): The display name of the `CreateModelStep` (default: None).
             description (str): The description of the `CreateModelStep` (default: None).
+            tags (Dict[str, str]): A list of tags used to tag the model object (default: None).
         """
         super(CreateModelStep, self).__init__(
             name, StepTypeEnum.CREATE_MODEL, display_name, description, depends_on, retry_policies
@@ -576,6 +578,7 @@ class CreateModelStep(ConfigurableRetryStep):
         self.step_args = step_args
         self.model = model
         self.inputs = inputs or CreateModelInput()
+        self.tags = tags
 
         self._properties = Properties(step_name=name, shape_name="DescribeModelOutput")
 
@@ -608,6 +611,7 @@ class CreateModelStep(ConfigurableRetryStep):
                     container_defs=self.model.pipeline_container_def(self.inputs.instance_type),
                     vpc_config=self.model.vpc_config,
                     enable_network_isolation=self.model.enable_network_isolation,
+                    tags=self.tags,
                 )
             else:
                 request_dict = self.model.sagemaker_session._create_model_request(
@@ -619,6 +623,7 @@ class CreateModelStep(ConfigurableRetryStep):
                     ),
                     vpc_config=self.model.vpc_config,
                     enable_network_isolation=self.model.enable_network_isolation(),
+                    tags=self.tags,
                 )
         request_dict.pop("ModelName", None)
 
